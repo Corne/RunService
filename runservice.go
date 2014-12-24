@@ -11,32 +11,6 @@ import (
 	"time"
 )
 
-func test(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", "henk")
-}
-
-type Person struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-
-func hello(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	p := Person{
-		Name: "Henk",
-		Age:  50,
-	}
-
-	b, err := json.Marshal(p)
-	if err != nil {
-		fmt.Print("error: ", err)
-	}
-	fmt.Fprintf(w, "%s", b)
-}
-
 type Run struct {
 	Id       int     `json:"id"`
 	Distance float64 `json:"distance"`
@@ -50,7 +24,6 @@ var Logger = log.New(os.Stdout, " ", log.Ldate|log.Ltime|log.Lshortfile)
 
 func getRuns() ([]Run, error) {
 	runs := []Run{}
-	//Logger.Println("db: ", &db == nil)
 	db.Find(&runs)
 	return runs, nil
 }
@@ -67,7 +40,6 @@ func setupRunDb() error {
 
 	_, err := os.Stat("data/run_db.sqlite")
 	if err != nil { //db doesn't exists
-		Logger.Println("creating table, ")
 		db.CreateTable(Run{})
 
 		example_run := Run{
@@ -81,48 +53,40 @@ func setupRunDb() error {
 			Logger.Println(err)
 		}
 	}
-	test := []Run{}
-	db.Find(&test)
-	Logger.Println("Hello, ", test)
-
-	value := new(bool)
-	db.Table("runs").HasTable(&value)
-	Logger.Println("Hello, ", *value)
 	return nil
 }
 
 func runHandler(w http.ResponseWriter, r *http.Request) {
 	err := setupRunDb()
 	if err != nil {
-		respond(w, 500, err.Error())
+		respond(w, 500, err)
 	}
 
 	if r.Method == "GET" {
 		runs, err := getRuns()
 		if err != nil {
-			respond(w, 500, err.Error())
+			respond(w, 500, err)
 		}
 
-		b, err := json.Marshal(runs)
-		if err != nil {
-			fmt.Print("error: ", err)
-		}
-
-		respond(w, 200, b)
+		respond(w, 200, runs)
 	}
 }
 
+/*
+ *	Marshals response body to json, and writes away response
+ */
 func respond(w http.ResponseWriter, statuscode int, body interface{}) {
+	message, err := json.Marshal(body)
+	if err != nil {
+		fmt.Print("error: ", err)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statuscode)
-	fmt.Fprintf(w, "%s", body)
+	fmt.Fprintf(w, "%s", message)
 }
 
 func main() {
-
-	http.HandleFunc("/test/", test)
-	http.HandleFunc("/hello/", hello)
-
 	http.HandleFunc("/runs/", runHandler)
 
 	http.ListenAndServe(":8080", nil)
