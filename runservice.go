@@ -28,8 +28,18 @@ func getRuns() ([]Run, error) {
 	return runs, nil
 }
 
+//save will create run if not existing
+func (run *Run) save() error {
+	return db.Save(run).Error
+}
+
+func (run *Run) isValid() bool {
+	return run.Distance > 0 && run.Result > 0 && run.Distance > 0
+}
+
 func setupRunDb() error {
-	db, dberror = gorm.Open("sqlite3", "data/run_db.sqlite") //todo replcae db location with config value
+	//todo replcae db location with config value
+	db, dberror = gorm.Open("sqlite3", "data/run_db.sqlite")
 	db.LogMode(false)
 	db.SetLogger(Logger)
 
@@ -37,7 +47,6 @@ func setupRunDb() error {
 		Logger.Println(dberror)
 		return dberror
 	}
-
 	_, err := os.Stat("data/run_db.sqlite")
 	if err != nil { //db doesn't exists
 		db.CreateTable(Run{})
@@ -62,13 +71,34 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		respond(w, 500, err)
 	}
 
-	if r.Method == "GET" {
+	Logger.Println("Method: ", r.Method)
+	switch r.Method {
+	case "GET":
 		runs, err := getRuns()
 		if err != nil {
 			respond(w, 500, err)
+		} else {
+			respond(w, 200, runs)
 		}
+	case "POST":
+		run := Run{}
+		Logger.Println("Body: ", r.Body)
 
-		respond(w, 200, runs)
+		err = json.NewDecoder(r.Body).Decode(&run)
+		Logger.Println("Run decoded: ", run)
+		if err != nil {
+			Logger.Println("error: ", err)
+			respond(w, 500, err)
+		} else if run.isValid() == false {
+			respond(w, 422, "invalid values")
+		} else {
+			err = run.save()
+			if err != nil {
+				respond(w, 500, err)
+			} else {
+				respond(w, 200, run)
+			}
+		}
 	}
 }
 
@@ -86,6 +116,7 @@ func respond(w http.ResponseWriter, statuscode int, body interface{}) {
 	fmt.Fprintf(w, "%s", message)
 }
 
+//https://github.com/jordan-wright/gophish/blob/master/controllers/api.go
 func main() {
 	http.HandleFunc("/runs/", runHandler)
 
