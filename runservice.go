@@ -83,6 +83,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		//{ "id": 0, "distance": 5.0, "result":1320,"date":1419428249945161100 } example input
 		run := Run{}
+
 		err = json.NewDecoder(r.Body).Decode(&run)
 		if err != nil {
 			Logger.Println("error: ", err)
@@ -122,5 +123,8 @@ func respond(w http.ResponseWriter, statuscode int, body interface{}) {
 func main() {
 	http.HandleFunc("/runs/", runHandler)
 
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8090", nil)
+	if err != nil {
+		Logger.Println(err)
+	}
 }
