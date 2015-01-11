@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -18,6 +19,13 @@ type Run struct {
 	Date     int64   `json:"date"`
 }
 
+//implementing sort interface ByDate
+type ByDate []Run
+
+func (a ByDate) Len() int           { return len(a) }
+func (a ByDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByDate) Less(i, j int) bool { return a[i].Date < a[j].Date }
+
 var db gorm.DB
 var dberror error
 var Logger = log.New(os.Stdout, " ", log.Ldate|log.Ltime|log.Lshortfile)
@@ -25,6 +33,9 @@ var Logger = log.New(os.Stdout, " ", log.Ldate|log.Ltime|log.Lshortfile)
 func getRuns() ([]Run, error) {
 	runs := []Run{}
 	db.Find(&runs)
+
+	//todo move sorting to own method
+	sort.Sort(ByDate(runs))
 	return runs, nil
 }
 
@@ -37,6 +48,7 @@ func (run *Run) isValid() bool {
 	return run.Distance > 0 && run.Result > 0 && run.Distance > 0
 }
 
+//todo move all db stuff to own file(/package)
 func setupRunDb() error {
 	//todo replcae db location with config value
 	db, dberror = gorm.Open("sqlite3", "data/run_db.sqlite")
@@ -83,7 +95,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		//{ "id": 0, "distance": 5.0, "result":1320,"date":1419428249945161100 } example input
 		run := Run{}
-
+		//todo run validation
 		err = json.NewDecoder(r.Body).Decode(&run)
 		if err != nil {
 			Logger.Println("error: ", err)
