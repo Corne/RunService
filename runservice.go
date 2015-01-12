@@ -66,7 +66,7 @@ func setupRunDb() error {
 		example_run := Run{
 			Distance: 5.0,
 			Result:   60 * 23,
-			Date:     time.Now().UnixNano(),
+			Date:     time.Now().Unix(),
 		}
 
 		err = db.Save(&example_run).Error
