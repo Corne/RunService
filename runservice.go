@@ -93,7 +93,6 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			respond(w, 200, runs)
 		}
 	case "POST":
-		//{ "id": 0, "distance": 5.0, "result":1320,"date":1419428249945161100 } example input
 		run := Run{}
 		//todo run validation
 		err = json.NewDecoder(r.Body).Decode(&run)
@@ -123,9 +122,9 @@ func respond(w http.ResponseWriter, statuscode int, body interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Add("Access-Control-Allow-Origin", "*, ")
-	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	//w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	//w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 
 	w.WriteHeader(statuscode)
 	fmt.Fprintf(w, "%s", message)
